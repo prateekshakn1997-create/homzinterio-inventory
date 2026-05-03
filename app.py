@@ -3,247 +3,213 @@ import sqlite3
 import pandas as pd
 
 # --- 1. App Configuration ---
-st.set_page_config(page_title="Homzinterio Inventory", page_icon="🏢", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Homzinterio ERP", page_icon="🏢", layout="wide", initial_sidebar_state="expanded")
 
-# --- 2. Custom CSS (The Zoho Look) ---
+# --- 2. Custom CSS (Zoho-Style Enterprise Look) ---
 st.markdown("""
     <style>
-    /* Zoho-style background */
     .stApp { background-color: #f4f6f8; }
-    
-    /* Clean up the header/footer */
     header {visibility: hidden;}
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    .block-container {padding-top: 2rem; padding-bottom: 2rem;}
+    .block-container {padding-top: 1rem; padding-bottom: 2rem;}
     
-    /* Zoho Style KPI Cards */
+    /* KPI Cards */
     div[data-testid="metric-container"] {
-        background-color: #ffffff;
-        border: 1px solid #e6e9ed;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+        background-color: #ffffff; border: 1px solid #e6e9ed; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.03);
     }
-    div[data-testid="metric-container"] label {
-        color: #5c6ac4;
-        font-weight: 600;
-        font-size: 14px;
-    }
+    div[data-testid="metric-container"] label { color: #5c6ac4; font-weight: 600; font-size: 14px; }
     
-    /* Zoho Style Action Buttons (Blue) */
+    /* Action Buttons */
     div.stButton > button:first-child {
-        background-color: #0052cc;
-        color: white;
-        border-radius: 4px;
-        border: none;
-        padding: 10px 24px;
-        font-weight: 500;
+        background-color: #0052cc; color: white; border-radius: 4px; border: none; padding: 5px 20px; font-weight: 500;
     }
-    div.stButton > button:hover {
-        background-color: #0043a6;
-        color: white;
-    }
+    div.stButton > button:hover { background-color: #0043a6; }
     
-    /* Tabs Styling */
-    .stTabs[data-baseweb="tab-list"] {
-        gap: 24px;
-    }
-    .stTabs [data-baseweb="tab"] {
-        height: 50px;
-        white-space: pre-wrap;
-        background-color: transparent;
-        border-radius: 4px 4px 0px 0px;
-        gap: 1px;
-        padding-top: 10px;
-        padding-bottom: 10px;
-        color: #42526e;
-    }
-    .stTabs [aria-selected="true"] {
-        border-bottom: 3px solid #0052cc;
-        color: #0052cc;
-        font-weight: bold;
-    }
-    
-    /* Sidebar Styling */
-    [data-testid="stSidebar"] {
-        background-color: #ffffff;
-        border-right: 1px solid #e6e9ed;
-    }
+    /* Tabs */
+    .stTabs [data-baseweb="tab"] { height: 50px; border-radius: 4px 4px 0px 0px; color: #42526e; }
+    .stTabs [aria-selected="true"] { border-bottom: 3px solid #0052cc; color: #0052cc; font-weight: bold; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- 3. Database Setup ---
+# --- 3. Database Setup (Expanded for ERP) ---
 conn = sqlite3.connect('homzinterio.db', check_same_thread=False)
 c = conn.cursor()
 c.execute('''CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT, role TEXT, phone TEXT)''')
 c.execute('''CREATE TABLE IF NOT EXISTS vendors (id INTEGER PRIMARY KEY, company_name TEXT, contact_person TEXT, phone TEXT, gstin TEXT)''')
 c.execute('''CREATE TABLE IF NOT EXISTS materials (id INTEGER PRIMARY KEY, name TEXT, category TEXT, quantity REAL, unit TEXT, vendor TEXT)''')
+# New Table for Sales
+c.execute('''CREATE TABLE IF NOT EXISTS customers (id INTEGER PRIMARY KEY, name TEXT, phone TEXT, email TEXT, address TEXT, type TEXT)''')
 conn.commit()
 
-# --- 4. Sidebar Navigation ---
-st.sidebar.markdown("## 🛋️ Homzinterio")
-st.sidebar.markdown("<span style='color: #8792a2; font-size: 12px;'>INVENTORY SYSTEM</span>", unsafe_allow_html=True)
-st.sidebar.markdown("---")
-
-menu =["📊 Dashboard", "📦 Items & Materials", "🏢 Vendors", "👥 Team Directory", "☁️ Data Import"]
-choice = st.sidebar.radio("Main Menu", menu, label_visibility="collapsed")
-
-# --- Helper Functions ---
 def get_data(query):
     return pd.read_sql_query(query, conn)
 
-# --- 5. Application Views ---
+# --- 4. Sidebar Multi-Level Navigation ---
+st.sidebar.markdown("## 🛋️ Homzinterio ERP")
+st.sidebar.markdown("<span style='color: #8792a2; font-size: 12px;'>OPERATING SYSTEM</span>", unsafe_allow_html=True)
+st.sidebar.markdown("---")
 
-if choice == "📊 Dashboard":
+# Main Menu
+main_menu = st.sidebar.radio("Main Menu",["🏠 Home", "📦 Items", "🗃️ Inventory", "💰 Sales", "🏢 Vendors & Team", "☁️ Data Import"])
+st.sidebar.markdown("---")
+
+# Sub Menus logic
+sub_menu = ""
+if main_menu == "📦 Items":
+    sub_menu = st.sidebar.radio("Items Menu", ["Items", "Composite Items", "Price List", "Item Groups"])
+elif main_menu == "🗃️ Inventory":
+    sub_menu = st.sidebar.radio("Inventory Menu", ["Assemblies", "Inventory Adjustments", "Packages", "Shipments"])
+elif main_menu == "💰 Sales":
+    sub_menu = st.sidebar.radio("Sales Menu",["Customers", "Sales Orders", "Invoices"])
+elif main_menu == "🏢 Vendors & Team":
+    sub_menu = st.sidebar.radio("Directory", ["Vendors", "Staff Directory"])
+
+# --- Helper UI Function for Placeholders ---
+def coming_soon_ui(title, description):
+    st.markdown(f"### {title}")
+    st.markdown(f"<div style='background-color: white; padding: 40px; text-align: center; border-radius: 8px; border: 1px dashed #c1c7d0; margin-top: 20px;'>"
+                f"<h4 style='color: #42526e;'>🚀 {title} Module</h4>"
+                f"<p style='color: #7a869a;'>{description}</p>"
+                f"<p style='color: #0052cc; font-size: 14px;'>Currently in development for Homzinterio.</p>"
+                f"</div>", unsafe_allow_html=True)
+
+# ==========================================
+#               ROUTING LOGIC
+# ==========================================
+
+# --- HOME ---
+if main_menu == "🏠 Home":
     st.markdown("### Dashboard")
-    st.markdown("<p style='color: #6b778c; margin-top: -15px;'>Overview of your interior stock & suppliers.</p>", unsafe_allow_html=True)
-    
-    # KPIs
     mat_count = get_data("SELECT COUNT(*) FROM materials").iloc[0,0]
-    ven_count = get_data("SELECT COUNT(*) FROM vendors").iloc[0,0]
+    cust_count = get_data("SELECT COUNT(*) FROM customers").iloc[0,0]
     total_qty = get_data("SELECT SUM(quantity) FROM materials").iloc[0,0] or 0
     
     col1, col2, col3 = st.columns(3)
-    col1.metric("Total Items (SKUs)", f"{mat_count}")
-    col2.metric("Total Stock Quantity", f"{total_qty:,.0f}")
-    col3.metric("Active Vendors", f"{ven_count}")
+    col1.metric("Total Items in Stock", f"{mat_count}")
+    col2.metric("Total Material Quantity", f"{total_qty:,.0f}")
+    col3.metric("Registered Customers", f"{cust_count}")
     
     st.markdown("<br>", unsafe_allow_html=True)
-    
-    # Charts and Tables View
-    col_chart, col_table = st.columns([1, 1.5])
-    
-    with col_chart:
-        st.markdown("**Stock by Category**")
-        cat_df = get_data("SELECT category, SUM(quantity) as quantity FROM materials GROUP BY category")
-        if not cat_df.empty:
-            cat_df.set_index('category', inplace=True)
-            st.bar_chart(cat_df, color="#0052cc")
-        else:
-            st.info("Not enough data for chart.")
-            
-    with col_table:
-        st.markdown("**Recently Added Items**")
-        recent_df = get_data("SELECT name as 'Item Name', category as 'Category', quantity as 'Qty' FROM materials ORDER BY id DESC LIMIT 6")
-        if not recent_df.empty:
-            st.dataframe(recent_df, use_container_width=True, hide_index=True)
-        else:
-            st.info("No items in inventory.")
+    st.markdown("**Recent Inventory Additions**")
+    recent_df = get_data("SELECT name as 'Item', category as 'Category', quantity as 'Qty' FROM materials ORDER BY id DESC LIMIT 5")
+    if not recent_df.empty:
+        st.dataframe(recent_df, use_container_width=True, hide_index=True)
 
-elif choice == "📦 Items & Materials":
-    st.markdown("### Items & Materials")
-    tab1, tab2 = st.tabs(["📄 All Items", "➕ New Item"])
-    
-    with tab1:
-        df = get_data("SELECT id as 'ID', name as 'Item Name', category as 'Category', quantity as 'Stock on Hand', unit as 'Unit', vendor as 'Preferred Vendor' FROM materials")
-        if df.empty:
-            st.info("No items found. Add a new item in the next tab.")
-        else:
+# --- ITEMS ---
+elif main_menu == "📦 Items":
+    if sub_menu == "Items":
+        st.markdown("### Items & Materials")
+        tab1, tab2 = st.tabs(["📄 All Items", "➕ New Item"])
+        with tab1:
+            df = get_data("SELECT id as 'ID', name as 'Item Name', category as 'Category', quantity as 'Stock', unit as 'Unit', vendor as 'Vendor' FROM materials")
             st.dataframe(df, use_container_width=True, hide_index=True)
-            
-    with tab2:
-        st.markdown("<div style='background-color: white; padding: 25px; border-radius: 8px; border: 1px solid #e6e9ed;'>", unsafe_allow_html=True)
-        vendors = [row[0] for row in c.execute("SELECT company_name FROM vendors").fetchall()]
-        
-        with st.form("add_item_form", clear_on_submit=True):
-            st.markdown("##### Basic Item Details")
-            c1, c2 = st.columns(2)
-            name = c1.text_input("Item Name *")
-            category = c2.selectbox("Category *",["Plywood", "Laminates", "Hardware", "Paint", "Adhesives", "Electrical", "Plumbing", "Other"])
-            
-            st.markdown("##### Stock Details")
-            c3, c4 = st.columns(2)
-            qty = c3.number_input("Opening Stock", min_value=0.0, step=1.0)
-            unit = c4.selectbox("Unit",["Sheets", "Sq.ft", "Pieces", "Boxes", "Kg", "Liters", "Running Ft"])
-            
-            vendor = st.selectbox("Preferred Vendor", vendors) if vendors else st.text_input("Preferred Vendor")
-            
-            st.markdown("<br>", unsafe_allow_html=True)
-            if st.form_submit_button("Save Item"):
-                if name:
+        with tab2:
+            st.markdown("<div style='background-color: white; padding: 25px; border-radius: 8px; border: 1px solid #e6e9ed;'>", unsafe_allow_html=True)
+            vendors = [row[0] for row in c.execute("SELECT company_name FROM vendors").fetchall()]
+            with st.form("add_item_form", clear_on_submit=True):
+                c1, c2 = st.columns(2)
+                name = c1.text_input("Item Name *")
+                category = c2.selectbox("Category *",["Plywood", "Laminates", "Hardware", "Paint", "Adhesives", "Electrical", "Plumbing", "Other"])
+                c3, c4 = st.columns(2)
+                qty = c3.number_input("Opening Stock", min_value=0.0, step=1.0)
+                unit = c4.selectbox("Unit",["Sheets", "Sq.ft", "Pieces", "Boxes", "Kg", "Liters", "Running Ft"])
+                vendor = st.selectbox("Preferred Vendor", vendors) if vendors else st.text_input("Preferred Vendor")
+                if st.form_submit_button("Save Item"):
                     c.execute("INSERT INTO materials (name, category, quantity, unit, vendor) VALUES (?, ?, ?, ?, ?)", (name, category, qty, unit, vendor))
                     conn.commit()
                     st.success(f"Item '{name}' saved successfully!")
-                else:
-                    st.error("Item Name is required.")
-        st.markdown("</div>", unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+            
+    elif sub_menu == "Composite Items":
+        coming_soon_ui("Composite Items", "Bundle multiple raw materials (e.g., Plywood + Laminate + Fevicol) into a single final unit like 'Wardrobe Door'.")
+    elif sub_menu == "Price List":
+        coming_soon_ui("Price List", "Manage custom pricing structures for different clients or wholesale vs retail.")
+    elif sub_menu == "Item Groups":
+        coming_soon_ui("Item Groups", "Group variations of the same item (e.g., 18mm Plywood in different wood grains).")
 
-elif choice == "🏢 Vendors":
-    st.markdown("### Vendors")
-    tab1, tab2 = st.tabs(["📄 Vendor List", "➕ Add Vendor"])
-    
-    with tab1:
-        df = get_data("SELECT company_name as 'Company Name', contact_person as 'Contact Person', phone as 'Phone', gstin as 'GSTIN' FROM vendors")
-        st.dataframe(df, use_container_width=True, hide_index=True)
-        
-    with tab2:
+# --- INVENTORY ---
+elif main_menu == "🗃️ Inventory":
+    if sub_menu == "Assemblies":
+        coming_soon_ui("Assemblies", "Track the process of converting raw items (Wood, Hardware) into finished goods (Cabinets).")
+    elif sub_menu == "Inventory Adjustments":
+        coming_soon_ui("Inventory Adjustments", "Adjust stock levels for damage, theft, or physical counting discrepancies.")
+    elif sub_menu == "Packages":
+        coming_soon_ui("Packages", "Group finished items together for shipping to the interior project site.")
+    elif sub_menu == "Shipments":
+        coming_soon_ui("Shipments", "Track delivery of materials from your warehouse to the client's home/project site.")
+
+# --- SALES ---
+elif main_menu == "💰 Sales":
+    if sub_menu == "Customers":
+        st.markdown("### Customers & Clients")
+        tab1, tab2 = st.tabs(["📄 Customer List", "➕ Add Customer"])
+        with tab1:
+            df = get_data("SELECT name as 'Client Name', phone as 'Phone', email as 'Email', type as 'Project Type' FROM customers")
+            st.dataframe(df, use_container_width=True, hide_index=True)
+        with tab2:
+            st.markdown("<div style='background-color: white; padding: 25px; border-radius: 8px; border: 1px solid #e6e9ed;'>", unsafe_allow_html=True)
+            with st.form("customer_form", clear_on_submit=True):
+                c1, c2 = st.columns(2)
+                name = c1.text_input("Customer / Project Name *")
+                proj_type = c2.selectbox("Project Type",["Residential (2BHK/3BHK)", "Commercial", "Renovation", "Individual Furniture"])
+                phone = c1.text_input("Phone Number")
+                email = c2.text_input("Email ID")
+                address = st.text_area("Site Address")
+                if st.form_submit_button("Save Customer"):
+                    if name:
+                        c.execute("INSERT INTO customers (name, phone, email, address, type) VALUES (?, ?, ?, ?, ?)", (name, phone, email, address, proj_type))
+                        conn.commit()
+                        st.success(f"Customer '{name}' added successfully!")
+                    else:
+                        st.error("Customer Name is required.")
+            st.markdown("</div>", unsafe_allow_html=True)
+            
+    elif sub_menu == "Sales Orders":
+        coming_soon_ui("Sales Orders", "Draft contracts and orders for clients detailing the interior work to be done.")
+    elif sub_menu == "Invoices":
+        coming_soon_ui("Invoices", "Generate GST-compliant invoices and track payments from your customers.")
+
+# --- VENDORS & TEAM ---
+elif main_menu == "🏢 Vendors & Team":
+    if sub_menu == "Vendors":
+        st.markdown("### Vendors")
         with st.form("vendor_form", clear_on_submit=True):
             c1, c2 = st.columns(2)
-            company = c1.text_input("Company/Business Name *")
-            person = c2.text_input("Primary Contact Person")
-            phone = c1.text_input("Phone Number")
-            gstin = c2.text_input("GSTIN Number (for billing)")
-            
+            company = c1.text_input("Company Name")
+            person = c2.text_input("Contact Person")
             if st.form_submit_button("Save Vendor"):
-                if company:
-                    c.execute("INSERT INTO vendors (company_name, contact_person, phone, gstin) VALUES (?, ?, ?, ?)", (company, person, phone, gstin))
-                    conn.commit()
-                    st.success("Vendor added successfully!")
-                else:
-                    st.error("Company Name is required.")
-
-elif choice == "👥 Team Directory":
-    st.markdown("### Team Directory")
-    tab1, tab2 = st.tabs(["📄 Staff List", "➕ Add Staff"])
-    
-    with tab1:
-        df = get_data("SELECT name as 'Name', role as 'Role', phone as 'Phone' FROM users")
-        st.dataframe(df, use_container_width=True, hide_index=True)
+                c.execute("INSERT INTO vendors (company_name, contact_person, phone, gstin) VALUES (?, ?, '', '')", (company, person))
+                conn.commit()
+                st.success("Vendor saved!")
+        st.dataframe(get_data("SELECT company_name as 'Company Name', contact_person as 'Contact' FROM vendors"), use_container_width=True, hide_index=True)
         
-    with tab2:
+    elif sub_menu == "Staff Directory":
+        st.markdown("### Team Directory")
         with st.form("staff_form", clear_on_submit=True):
-            c1, c2 = st.columns(2)
-            name = c1.text_input("Employee Name *")
-            role = c2.selectbox("Role",["Admin", "Site Supervisor", "Lead Designer", "Draftsman", "Carpenter", "Manager"])
-            phone = c1.text_input("Phone Number")
+            name = st.text_input("Employee Name")
+            role = st.selectbox("Role",["Site Supervisor", "Lead Designer", "Carpenter", "Manager"])
             if st.form_submit_button("Save Details"):
-                if name:
-                    c.execute("INSERT INTO users (name, role, phone) VALUES (?, ?, ?)", (name, role, phone))
-                    conn.commit()
-                    st.success("Staff profile created!")
-                else:
-                    st.error("Employee Name is required.")
+                c.execute("INSERT INTO users (name, role, phone) VALUES (?, ?, '')", (name, role))
+                conn.commit()
+                st.success("Staff profile created!")
+        st.dataframe(get_data("SELECT name as 'Name', role as 'Role' FROM users"), use_container_width=True, hide_index=True)
 
-elif choice == "☁️ Data Import":
+# --- DATA IMPORT ---
+elif main_menu == "☁️ Data Import":
     st.markdown("### Import Data")
-    st.markdown("Upload bulk inventory records via Excel or CSV.")
-    
-    st.info("💡 Make sure your columns are exactly: **Name**, **Category**, **Quantity**, **Unit**, **Vendor**")
-    
-    uploaded_file = st.file_uploader("Drop your Excel/CSV file here", type=["xlsx", "csv"])
-    
+    uploaded_file = st.file_uploader("Upload Excel/CSV for Materials", type=["xlsx", "csv"])
     if uploaded_file is not None:
         try:
-            if uploaded_file.name.endswith('.csv'):
-                df = pd.read_csv(uploaded_file)
-            else:
-                df = pd.read_excel(uploaded_file)
-                
-            st.markdown("**Preview:**")
+            df = pd.read_csv(uploaded_file) if uploaded_file.name.endswith('.csv') else pd.read_excel(uploaded_file)
             st.dataframe(df.head(), use_container_width=True)
-            
-            if st.button("Start Import Process"):
+            if st.button("Start Import"):
                 df.columns = df.columns.str.lower()
-                expected_cols =['name', 'category', 'quantity', 'unit', 'vendor']
-                
-                if all(col in df.columns for col in expected_cols):
-                    for index, row in df.iterrows():
+                if all(col in df.columns for col in['name', 'category', 'quantity', 'unit', 'vendor']):
+                    for _, row in df.iterrows():
                         c.execute("INSERT INTO materials (name, category, quantity, unit, vendor) VALUES (?, ?, ?, ?, ?)",
                                   (str(row['name']), str(row['category']), float(row['quantity']), str(row['unit']), str(row['vendor'])))
                     conn.commit()
-                    st.success(f"✅ Successfully imported {len(df)} items!")
+                    st.success("✅ Items imported!")
                 else:
-                    st.error(f"Format mismatch! Your file must have these headers: {', '.join(expected_cols)}")
+                    st.error("Format mismatch! Missing columns.")
         except Exception as e:
-            st.error(f"Error processing file: {e}")
+            st.error(f"Error: {e}")
